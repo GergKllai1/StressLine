@@ -773,7 +773,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.seconds
 
 private fun clientReturning(status: HttpStatusCode, capture: (HttpRequestData) -> Unit = {}): HttpClient =
@@ -785,7 +785,7 @@ private fun clientReturning(status: HttpStatusCode, capture: (HttpRequestData) -
 class HttpRunnerTest : ShouldSpec({
     context("a successful GET") {
         should("return a success result with the status") {
-            runTest {
+            runBlocking {
                 val config = RunConfig(url = "http://x", mode = LoadMode.FixedConcurrency(1), timeout = 5.seconds)
                 val result = KtorHttpRunner(clientReturning(HttpStatusCode.OK), config).execute()
                 result.isSuccess shouldBe true
@@ -795,7 +795,7 @@ class HttpRunnerTest : ShouldSpec({
     }
     context("a POST with headers and body") {
         should("send the configured method, headers, and body") {
-            runTest {
+            runBlocking {
                 var seen: HttpRequestData? = null
                 val client = clientReturning(HttpStatusCode.Created) { seen = it }
                 val config = RunConfig(
@@ -811,7 +811,7 @@ class HttpRunnerTest : ShouldSpec({
     }
     context("a 500 response") {
         should("be classified as an http error") {
-            runTest {
+            runBlocking {
                 val config = RunConfig(url = "http://x", mode = LoadMode.FixedConcurrency(1))
                 val result = KtorHttpRunner(clientReturning(HttpStatusCode.InternalServerError), config).execute()
                 result.error shouldBe RequestError.HttpError(500)
