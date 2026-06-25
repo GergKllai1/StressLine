@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Kotlin `2.1.0`, JVM toolchain `17`, Gradle wrapper `8.10` or newer.
+- Kotlin `2.1.0`, JVM toolchain `21`, Gradle wrapper `8.10` or newer.
 - Package root: `dev.stressline`. Source under `src/main/kotlin/dev/stressline/`, tests under `src/test/kotlin/dev/stressline/`.
 - Dependency versions (exact): kotlinx-cli `0.3.6`; kotlinx-coroutines-core / -test `1.10.1`; Ktor `3.0.3` (client-core, client-cio, client-mock); HdrHistogram `2.2.2`; JNA `5.15.0`; Kotest `5.9.1` (runner-junit5, assertions-core); shadow plugin `com.gradleup.shadow` `8.3.5`.
 - All tests use Kotest `ShouldSpec` with `context(...) { should(...) { ... } }` nesting and `kotest-assertions-core` matchers (`shouldBe`, etc.).
@@ -80,7 +80,7 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 application {
