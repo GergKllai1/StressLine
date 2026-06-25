@@ -31,6 +31,7 @@ kotlin {
 
 application {
     mainClass.set("dev.stressline.MainKt")
+    applicationName = "stressline"
 }
 
 tasks.test {
