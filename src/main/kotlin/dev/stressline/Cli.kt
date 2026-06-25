@@ -25,6 +25,13 @@ fun parseArgs(args: Array<String>): RunConfig {
 
     parser.parse(args)
 
+    if (concurrency != null && concurrency!! <= 0)
+        throw CliValidationException("--concurrency must be a positive integer")
+    if (rate != null && rate!! <= 0)
+        throw CliValidationException("--rate must be a positive integer")
+    if (requests != null && requests!! <= 0)
+        throw CliValidationException("--requests must be a positive integer")
+
     val mode = when {
         concurrency != null && rate != null ->
             throw CliValidationException("--concurrency and --rate are mutually exclusive")

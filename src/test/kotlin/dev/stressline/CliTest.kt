@@ -52,4 +52,21 @@ class CliTest : ShouldSpec({
             }
         }
     }
+    context("non-positive load/stop integers") {
+        should("reject --concurrency 0") {
+            shouldThrow<CliValidationException> {
+                parseArgs(arrayOf("--url", "http://x", "--concurrency", "0"))
+            }
+        }
+        should("reject --rate 0") {
+            shouldThrow<CliValidationException> {
+                parseArgs(arrayOf("--url", "http://x", "--rate", "0"))
+            }
+        }
+        should("reject --requests 0") {
+            shouldThrow<CliValidationException> {
+                parseArgs(arrayOf("--url", "http://x", "--concurrency", "1", "--requests", "0"))
+            }
+        }
+    }
 })

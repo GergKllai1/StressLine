@@ -6,9 +6,28 @@ import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.longs.shouldBeLessThanOrEqual
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runTest
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 class MetricsCollectorTest : ShouldSpec({
+    context("empty snapshot") {
+        should("return all zeros and empty maps without throwing") {
+            val collector = ChannelMetricsCollector()
+            val s = collector.snapshot()
+            s.total shouldBe 0L
+            s.success shouldBe 0L
+            s.failed shouldBe 0L
+            s.errorCounts shouldBe emptyMap()
+            s.statusCounts shouldBe emptyMap()
+            s.latencyMin shouldBe Duration.ZERO
+            s.latencyMean shouldBe Duration.ZERO
+            s.latencyP50 shouldBe Duration.ZERO
+            s.latencyP90 shouldBe Duration.ZERO
+            s.latencyP95 shouldBe Duration.ZERO
+            s.latencyP99 shouldBe Duration.ZERO
+            s.latencyMax shouldBe Duration.ZERO
+        }
+    }
     context("when draining a sequence of results") {
         should("count successes, failures, and error categories") {
             runTest {

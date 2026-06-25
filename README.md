@@ -39,5 +39,9 @@ Tuning:
   of RPS depending on TLS and the target; beyond that use a distributed tool.
 - Connection keep-alive is on (shared client) — essential for high RPS.
 - On Linux/macOS the tool raises its own file-descriptor soft limit when
-  `--concurrency` needs it. If it can't reach the needed value, raise the hard
-  limit first: `ulimit -n 65535`.
+  `--concurrency` or `--rate` needs it. If it can't reach the needed value,
+  raise the hard limit first: `ulimit -n 65535`.
+- Target-rate (`--rate`) pacing uses a `delay`-based loop with ~1 ms JVM timer
+  granularity, so it is accurate up to roughly low-thousands of RPS. For higher
+  sustained load, use fixed-concurrency (`--concurrency`), which has no such
+  ceiling.

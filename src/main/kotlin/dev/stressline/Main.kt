@@ -7,6 +7,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.security.cert.X509Certificate
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.X509TrustManager
 import kotlin.system.exitProcess
 import kotlin.time.TimeSource
@@ -25,8 +26,9 @@ fun main(args: Array<String>) {
         exitProcess(2)
     }
 
-    if (config.mode is LoadMode.FixedConcurrency) {
-        ensureFdLimit((config.mode as LoadMode.FixedConcurrency).workers, JnaFdLimit()) { println(it) }
+    when (val m = config.mode) {
+        is LoadMode.FixedConcurrency -> ensureFdLimit(m.workers, JnaFdLimit()) { println(it) }
+        is LoadMode.TargetRate -> ensureFdLimit(m.rps * 2, JnaFdLimit()) { println(it) }
     }
 
     val client = HttpClient(CIO) {
@@ -39,6 +41,18 @@ fun main(args: Array<String>) {
     }
 
     val collector = ChannelMetricsCollector()
+    val start = TimeSource.Monotonic.markNow()
+    val summaryPrinted = AtomicBoolean(false)
+
+    fun printSummaryOnce() {
+        if (summaryPrinted.compareAndSet(false, true)) {
+            println()
+            println(Report.summary(collector.snapshot(), start.elapsedNow()))
+        }
+    }
+
+    Runtime.getRuntime().addShutdownHook(Thread { printSummaryOnce() })
+
     val results = Channel<RequestResult>(capacity = 1024)
     val runner = KtorHttpRunner(client, config)
     val engine = LoadEngine(runner, results)
@@ -47,7 +61,6 @@ fun main(args: Array<String>) {
     runBlocking {
         val collectorJob = launch { collector.consume(results) }
         val progressJob = launch { reporter.runLive() }
-        val start = TimeSource.Monotonic.markNow()
         try {
             engine.run(config.mode, config.stop)
         } finally {
@@ -55,8 +68,7 @@ fun main(args: Array<String>) {
             collectorJob.join()
             progressJob.cancelAndJoin()
             client.close()
+            printSummaryOnce()
         }
-        println()
-        println(Report.summary(collector.snapshot(), start.elapsedNow()))
     }
 }
