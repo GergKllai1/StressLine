@@ -6,20 +6,45 @@ A local HTTP/HTTPS stress-testing CLI built with Kotlin coroutines.
 
 Installs a `stressline` command on your `PATH`. Requires a Java 21+ runtime.
 
+### From a release (recommended)
+
+Downloads the latest published tarball and installs it (no build needed).
+Replace `<owner>/<repo>` with this project's GitHub repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/main/install-release.sh \
+    | STRESSLINE_REPO=<owner>/<repo> sh
+```
+
+Environment overrides: `PREFIX` (default `~/.local`; use `/usr/local` for
+system-wide) and `VERSION` (default `latest`, or a tag like `v0.1.0`).
+
+### From source
+
 ```bash
 ./install.sh                     # per-user install into ~/.local/bin (no sudo)
 PREFIX=/usr/local ./install.sh   # system-wide (may require sudo)
-
-stressline --url https://example.com --concurrency 50 --duration 30s
 ```
 
-If the installer warns that the bin directory isn't on your `PATH`, add the
-printed `export PATH=...` line to your shell profile. Remove the command with
-`./uninstall.sh` (honors the same `PREFIX`).
+Both installers symlink a launcher (the app distribution: a start script plus
+its dependency jars) into `PREFIX/bin`. If you're warned that the bin directory
+isn't on your `PATH`, add the printed `export PATH=...` line to your shell
+profile. Remove the command with `./uninstall.sh` (honors the same `PREFIX`).
 
-The installer builds the app distribution (`./gradlew installDist`) — a launcher
-script plus its dependency jars — and symlinks the launcher into your bin
-directory. No fat jar required.
+## Releasing
+
+A GitHub Actions workflow (`.github/workflows/release.yml`) builds the
+distribution tarball and publishes it to a GitHub Release when a version tag is
+pushed:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+It uploads both `stressline-<version>.tar.gz` and a stable-named
+`stressline.tar.gz`, so `install-release.sh` can fetch the latest via the
+`releases/latest/download/` URL without an API call.
 
 ## Build a portable fat jar (alternative)
 

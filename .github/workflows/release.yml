@@ -1,0 +1,39 @@
+name: Release
+
+# Publishes a distribution tarball to a GitHub Release when a version tag is
+# pushed, e.g.:  git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # required to create the release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build distribution tarball
+        run: ./gradlew --no-daemon distTar
+
+      - name: Stage a stable-named asset for latest/download
+        run: cp build/distributions/stressline-*.tar.gz stressline.tar.gz
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            stressline.tar.gz \
+            build/distributions/stressline-*.tar.gz \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes

@@ -39,3 +39,10 @@ application {
 tasks.test {
     useJUnitPlatform()
 }
+
+// Produce a gzip-compressed distribution tarball (stressline-<version>.tar.gz)
+// for GitHub Releases, consumed by install-release.sh.
+tasks.named<Tar>("distTar") {
+    compression = Compression.GZIP
+    archiveExtension.set("tar.gz")
+}
