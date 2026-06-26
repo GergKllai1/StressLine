@@ -3,26 +3,20 @@
 # Requires a Java 21+ runtime on PATH at run time.
 #
 # Usage:
-#   STRESSLINE_REPO=<owner>/<repo> sh install-release.sh
-#   curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/main/install-release.sh \
-#       | STRESSLINE_REPO=<owner>/<repo> sh
+#   curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/install-release.sh | sh
 #
 # Options (environment):
-#   STRESSLINE_REPO   GitHub "owner/repo" to download from (required)
+#   STRESSLINE_REPO   GitHub "owner/repo" to download from (default: GergKllai1/StressLine;
+#                     override only when installing from a fork)
 #   PREFIX            install prefix (default: ~/.local; use /usr/local for system-wide)
 #   VERSION           release tag to install (default: latest)
 set -eu
 
-REPO="${STRESSLINE_REPO:-}"
+REPO="${STRESSLINE_REPO:-GergKllai1/StressLine}"
 PREFIX="${PREFIX:-$HOME/.local}"
 VERSION="${VERSION:-latest}"
 BIN_DIR="$PREFIX/bin"
 SHARE_DIR="$PREFIX/share/stressline"
-
-if [ -z "$REPO" ]; then
-    echo "error: set STRESSLINE_REPO=<owner>/<repo> (the GitHub repository to download from)" >&2
-    exit 1
-fi
 
 # The release publishes a stable-named asset so "latest" needs no API call.
 if [ "$VERSION" = "latest" ]; then

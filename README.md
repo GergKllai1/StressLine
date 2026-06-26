@@ -9,15 +9,15 @@ Installs a `stressline` command on your `PATH`. Requires a Java 21+ runtime.
 ### From a release (recommended)
 
 Downloads the latest published tarball and installs it (no build needed).
-Replace `<owner>/<repo>` with this project's GitHub repository:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/main/install-release.sh \
-    | STRESSLINE_REPO=<owner>/<repo> sh
+curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/install-release.sh | sh
 ```
 
 Environment overrides: `PREFIX` (default `~/.local`; use `/usr/local` for
-system-wide) and `VERSION` (default `latest`, or a tag like `v0.1.0`).
+system-wide), `VERSION` (default `latest`, or a tag like `v0.1.0`), and
+`STRESSLINE_REPO` (default `GergKllai1/StressLine`; set this only when
+installing from a fork).
 
 ### From source
 
