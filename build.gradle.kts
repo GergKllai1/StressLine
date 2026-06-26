@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     kotlin("jvm") version "2.2.0"
     application
@@ -30,20 +28,9 @@ dependencies {
 }
 
 kotlin {
-    // Build with the installed JDK (21) but emit Java 17 bytecode so the tool
-    // runs on any JRE 17+. -Xjdk-release caps the API surface at 17 to prevent
-    // accidental use of newer JDK APIs.
-    jvmToolchain(21)
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
-        freeCompilerArgs.add("-Xjdk-release=17")
-    }
-}
-
-// Keep the Java compiler target aligned with Kotlin's (17), and cap its API at
-// 17, even though the build runs on JDK 21.
-tasks.withType<JavaCompile>().configureEach {
-    options.release.set(17)
+    // Build and target JDK 17, so the tool runs on any JRE 17+. The foojay
+    // resolver (see settings.gradle.kts) provisions a JDK 17 if none is installed.
+    jvmToolchain(17)
 }
 
 application {
