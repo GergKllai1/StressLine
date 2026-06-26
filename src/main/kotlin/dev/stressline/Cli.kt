@@ -73,12 +73,24 @@ fun parseArgs(args: Array<String>): RunConfig {
       else -> StopCondition.ForDuration(10.seconds)
     }
 
+  val resolvedBody =
+    body?.let { raw ->
+      if (raw.startsWith("@")) {
+        val path = raw.substring(1)
+        val file = java.io.File(path)
+        if (!file.isFile) throw CliValidationException("body file not found: $path")
+        file.readText()
+      } else {
+        raw
+      }
+    }
+
   return RunConfig(
     url = url,
     mode = mode,
     method = method,
     headers = headerOpts.map(::parseHeader),
-    body = body,
+    body = resolvedBody,
     stop = stop,
     timeout = DurationParser.parse(timeout),
     insecure = insecure,

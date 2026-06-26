@@ -105,4 +105,22 @@ class CliTest :
         }
       }
     }
+    context("body from a file") {
+      should("read the body from @path") {
+        val f = java.io.File.createTempFile("stressline-body", ".txt")
+        f.writeText("payload-from-file")
+        f.deleteOnExit()
+        val c = parseArgs(arrayOf("http://x", "-c", "1", "-d", "@${f.path}"))
+        c.body shouldBe "payload-from-file"
+      }
+      should("keep a plain body unchanged") {
+        val c = parseArgs(arrayOf("http://x", "-c", "1", "-d", "literal"))
+        c.body shouldBe "literal"
+      }
+      should("reject a missing body file") {
+        shouldThrow<CliValidationException> {
+          parseArgs(arrayOf("http://x", "-c", "1", "-d", "@/no/such/file.json"))
+        }
+      }
+    }
   })
