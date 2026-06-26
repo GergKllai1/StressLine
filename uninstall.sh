@@ -1,8 +1,9 @@
 #!/bin/sh
-# Remove the `stressline` command installed by install.sh.
+# Remove the `stressline` command (installed by install.sh or install-release.sh).
 #
 # Usage:
-#   ./uninstall.sh                     # removes from ~/.local
+#   curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/uninstall.sh | sh
+#   ./uninstall.sh                     # if you have the repo checked out
 #   PREFIX=/usr/local ./uninstall.sh   # removes a system-wide install
 set -eu
 

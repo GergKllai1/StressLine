@@ -34,14 +34,22 @@ This installs a `stressline` command into `~/.local/bin` (no sudo). If it warns
 that the directory isn't on your `PATH`, add the printed `export PATH=...` line
 to your shell profile and reopen your shell.
 
-Options (set as environment variables before the command):
+Options are environment variables placed on the `sh` side of the pipe, e.g.
+`curl ... | PREFIX=/usr/local sh`:
 
 - `PREFIX` — install location (default `~/.local`; use `/usr/local` for a
   system-wide install, which may need `sudo`).
 - `VERSION` — a specific release tag (default `latest`).
 
-Uninstall with `./uninstall.sh` (or just remove `~/.local/bin/stressline` and
-`~/.local/share/stressline`).
+## Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/uninstall.sh | sh
+```
+
+Pass the same `PREFIX` you installed with if you didn't use the default — note
+it goes on the `sh` side of the pipe, e.g. `curl ... | PREFIX=/usr/local sh`. It
+removes only `PREFIX/bin/stressline` and `PREFIX/share/stressline`.
 
 ## Quick start
 
