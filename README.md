@@ -94,7 +94,16 @@ Stop condition (default: --duration 10s):
 Request:
   -X, --method <M>        HTTP method (default GET)
   -H, --header "K: V"     Add a header (repeat for multiple)
-  -d, --body <STR>        Request body
+  -d, --body <STR|@FILE>  Body string, or @path to read it from a file
+
+Output:
+  --json                Emit the summary as JSON on stdout (progress → stderr)
+  --json-out [PATH]     Also write JSON to a file (bare → stressline-run-<ts>.json,
+                        or a PATH ending in .json)
+
+CI gate (exit 1 if breached):
+  --fail-if-error-rate <PCT>   e.g. 1, 0.5
+  --fail-if-p95 <DUR>          e.g. 200ms
 
 Tuning:
   --timeout <DUR>         Per-request timeout (default 5s)
@@ -161,6 +170,19 @@ If your *achieved* throughput comes in well below a `--rate` target, the server
   high-throughput numbers.
 - **`--insecure`** disables TLS verification — handy for self-signed or local
   endpoints. Don't use it when the certificate actually matters.
+
+## Use in CI
+
+Gate a pipeline on latency/error thresholds — a breach exits non-zero:
+
+```bash
+stressline https://staging.example.com/health -r 100 -t 30s \
+  --fail-if-p95 200ms --fail-if-error-rate 1 \
+  --json-out reports/loadtest.json
+```
+
+Exit codes: `0` pass, `1` a threshold was breached, `2` bad usage. `--json`
+prints the summary to stdout (progress goes to stderr) for piping to `jq`.
 
 ## Build from source
 
