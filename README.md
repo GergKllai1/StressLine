@@ -184,6 +184,68 @@ stressline https://staging.example.com/health -r 100 -t 30s \
 Exit codes: `0` pass, `1` a threshold was breached, `2` bad usage. `--json`
 prints the summary to stdout (progress goes to stderr) for piping to `jq`.
 
+Because the exit code is non-zero on a breach, any CI runner gates on StressLine
+the same way it gates on a failing test. The only setup is Java 17 plus the
+`stressline` binary on the runner; the examples below install it, then run the
+gated step and archive the JSON report (kept even on a breach).
+
+### GitHub Actions
+
+```yaml
+jobs:
+  loadtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/install-release.sh | sh
+      - run: |
+          ~/.local/bin/stressline "$STAGING_URL/health" -r 100 -t 30s \
+            --fail-if-p95 200ms --fail-if-error-rate 1 \
+            --json-out reports/loadtest.json
+        env:
+          STAGING_URL: https://staging.example.com
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: loadtest-report
+          path: reports/loadtest.json
+```
+
+### CircleCI
+
+```yaml
+jobs:
+  loadtest:
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - run: curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/install-release.sh | sh
+      - run: |
+          ~/.local/bin/stressline "$STAGING_URL/health" -r 100 -t 30s \
+            --fail-if-p95 200ms --fail-if-error-rate 1 \
+            --json-out reports/loadtest.json
+      - store_artifacts:
+          path: reports/loadtest.json
+```
+
+### Woodpecker CI
+
+```yaml
+steps:
+  loadtest:
+    image: eclipse-temurin:17-jre
+    commands:
+      - curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/install-release.sh | sh
+      - export PATH="$HOME/.local/bin:$PATH"
+      - |
+        stressline "$STAGING_URL/health" -r 100 -t 30s \
+          --fail-if-p95 200ms --fail-if-error-rate 1 \
+          --json-out reports/loadtest.json
+```
+
 ## Build from source
 
 If you'd rather build it yourself (requires the repo checked out; the build
@@ -194,3 +256,14 @@ fetches a JDK 17 toolchain automatically if you don't have one):
 # or produce a single portable jar:
 ./gradlew shadowJar          # -> build/libs/StressLine-<version>-all.jar
 ```
+
+## Contributing
+
+Contributions are welcome. Open an issue to discuss a change or report a bug,
+then send a pull request. Please run `./gradlew build` (which compiles, tests,
+and lints) before submitting.
+
+## License
+
+StressLine is open source under the [MIT License](LICENSE). You're free to use,
+modify, and distribute it.
