@@ -4,7 +4,7 @@ import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.cli.multiple
-import kotlinx.cli.required
+import kotlinx.cli.optional
 import kotlin.time.Duration.Companion.seconds
 
 class CliValidationException(
@@ -13,7 +13,13 @@ class CliValidationException(
 
 fun parseArgs(args: Array<String>): RunConfig {
   val parser = ArgParser("stressline")
-  val url by parser.option(ArgType.String, shortName = "u", fullName = "url", description = "Target URL").required()
+  val urlOpt by parser.option(
+    ArgType.String,
+    shortName = "u",
+    fullName = "url",
+    description = "Target URL (or pass it as the first argument)",
+  )
+  val urlArg by parser.argument(ArgType.String, fullName = "url", description = "Target URL").optional()
   val method by parser.option(ArgType.String, shortName = "X", fullName = "method", description = "HTTP method").default("GET")
   val headerOpts by parser.option(ArgType.String, shortName = "H", fullName = "header", description = "Header 'Name: Value'").multiple()
   val body by parser.option(ArgType.String, shortName = "d", fullName = "body", description = "Request body")
@@ -31,6 +37,13 @@ fun parseArgs(args: Array<String>): RunConfig {
   val noProgress by parser.option(ArgType.Boolean, fullName = "no-progress", description = "Disable live progress").default(false)
 
   parser.parse(args)
+
+  if (urlOpt != null && urlArg != null && urlOpt != urlArg) {
+    throw CliValidationException("URL specified twice with different values; pass it once (as an argument or with --url)")
+  }
+  val url =
+    urlOpt ?: urlArg
+      ?: throw CliValidationException("a target URL is required (pass it as the first argument or with --url)")
 
   if (concurrency != null && concurrency!! <= 0) {
     throw CliValidationException("--concurrency must be a positive integer")

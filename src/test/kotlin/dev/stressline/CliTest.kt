@@ -49,6 +49,28 @@ class CliTest :
         c.timeout shouldBe 2.seconds
       }
     }
+    context("URL as a positional argument") {
+      should("accept the URL as the first argument (curl-style)") {
+        val c = parseArgs(arrayOf("https://example.com", "--concurrency", "8"))
+        c.url shouldBe "https://example.com"
+      }
+      should("accept the positional URL after options too") {
+        val c = parseArgs(arrayOf("--concurrency", "8", "https://example.com"))
+        c.url shouldBe "https://example.com"
+      }
+      should("still accept --url") {
+        val c = parseArgs(arrayOf("-u", "https://example.com", "--concurrency", "8"))
+        c.url shouldBe "https://example.com"
+      }
+      should("reject when no URL is given at all") {
+        shouldThrow<CliValidationException> { parseArgs(arrayOf("--concurrency", "8")) }
+      }
+      should("reject when the argument and --url disagree") {
+        shouldThrow<CliValidationException> {
+          parseArgs(arrayOf("https://a.example", "--url", "https://b.example", "--concurrency", "8"))
+        }
+      }
+    }
     context("mode validation") {
       should("reject specifying both concurrency and rate") {
         shouldThrow<CliValidationException> {

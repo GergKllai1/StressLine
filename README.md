@@ -5,7 +5,7 @@ to hit it, and get latency percentiles, throughput, and a breakdown of errors â€
 all from a single command, no config files.
 
 ```
-$ stressline --url https://example.com --concurrency 50 --duration 10s
+$ stressline https://example.com --concurrency 50 --duration 10s
 --- StressLine results ---
 Total:       18432
 Success:     18432
@@ -53,18 +53,20 @@ removes only `PREFIX/bin/stressline` and `PREFIX/share/stressline`.
 
 ## Quick start
 
+The URL can be the first argument (curl-style) or given with `-u`/`--url`.
+
 ```bash
 # Hammer a URL with 50 concurrent clients for 10 seconds
-stressline --url https://example.com --concurrency 50 --duration 10s
+stressline https://example.com --concurrency 50 --duration 10s
 
 # Hold a steady 200 requests/second for one minute
-stressline --url https://api.example.com/health --rate 200 --duration 1m
+stressline https://api.example.com/health --rate 200 --duration 1m
 
 # Send exactly 1000 requests, 20 at a time
-stressline --url https://example.com --requests 1000 --concurrency 20
+stressline https://example.com --requests 1000 --concurrency 20
 
 # POST JSON with headers
-stressline --url https://api.example.com/users \
+stressline https://api.example.com/users \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
@@ -72,13 +74,14 @@ stressline --url https://api.example.com/users \
   --concurrency 10 --duration 30s
 
 # A local server with a self-signed certificate
-stressline --url https://localhost:8443 --insecure --concurrency 25 --duration 15s
+stressline https://localhost:8443 --insecure --concurrency 25 --duration 15s
 ```
 
 ## Usage
 
 ```
-stressline --url <URL> [options]
+stressline <URL> [options]
+stressline -u <URL> [options]     # equivalent
 
 Load mode (exactly one required):
   -c, --concurrency <N>   N concurrent clients, each looping as fast as it can
