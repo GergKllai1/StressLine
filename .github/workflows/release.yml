@@ -34,9 +34,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Use the annotated tag's message as the release body (set by deploy.sh),
+          # appending the auto-generated commit/PR notes below it.
+          notes="$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")"
           gh release create "${GITHUB_REF_NAME}" \
             stressline.tar.gz \
             build/distributions/stressline-*.tar.gz \
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
+            --notes "${notes}" \
             --generate-notes
