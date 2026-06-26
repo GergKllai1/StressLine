@@ -23,6 +23,14 @@ sealed interface StopCondition {
   ) : StopCondition
 }
 
+sealed interface JsonOutTarget {
+  data object Auto : JsonOutTarget
+
+  data class File(
+    val path: String,
+  ) : JsonOutTarget
+}
+
 data class RunConfig(
   val url: String,
   val mode: LoadMode,
@@ -33,6 +41,10 @@ data class RunConfig(
   val timeout: Duration = 5.seconds,
   val insecure: Boolean = false,
   val showProgress: Boolean = true,
+  val jsonToStdout: Boolean = false,
+  val jsonOut: JsonOutTarget? = null,
+  val failIfErrorRate: Double? = null,
+  val failIfP95: Duration? = null,
 )
 
 fun parseHeader(raw: String): Pair<String, String> {
