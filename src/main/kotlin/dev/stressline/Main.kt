@@ -70,9 +70,10 @@ fun main(args: Array<String>) {
       exitProcess(2)
     }
 
+  val fdLog: (String) -> Unit = { if (config.jsonToStdout) System.err.println(it) else println(it) }
   when (val m = config.mode) {
-    is LoadMode.FixedConcurrency -> ensureFdLimit(m.workers, JnaFdLimit()) { println(it) }
-    is LoadMode.TargetRate -> ensureFdLimit(m.rps * 2, JnaFdLimit()) { println(it) }
+    is LoadMode.FixedConcurrency -> ensureFdLimit(m.workers, JnaFdLimit(), fdLog)
+    is LoadMode.TargetRate -> ensureFdLimit(m.rps * 2, JnaFdLimit(), fdLog)
   }
 
   val client =
