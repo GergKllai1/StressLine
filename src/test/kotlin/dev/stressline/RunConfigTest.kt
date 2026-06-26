@@ -24,4 +24,22 @@ class RunConfigTest :
         c.showProgress shouldBe true
       }
     }
+    context("new output and threshold fields") {
+      should("default to off/null") {
+        val c = RunConfig(url = "http://x", mode = LoadMode.FixedConcurrency(1))
+        c.jsonToStdout shouldBe false
+        c.jsonOut shouldBe null
+        c.failIfErrorRate shouldBe null
+        c.failIfP95 shouldBe null
+      }
+      should("carry a JsonOutTarget.File path") {
+        val c =
+          RunConfig(
+            url = "http://x",
+            mode = LoadMode.FixedConcurrency(1),
+            jsonOut = JsonOutTarget.File("reports/run.json"),
+          )
+        c.jsonOut shouldBe JsonOutTarget.File("reports/run.json")
+      }
+    }
   })
