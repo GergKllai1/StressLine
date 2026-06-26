@@ -1,8 +1,8 @@
 package dev.stressline
 
 object Help {
-  val text: String =
-    """
+	val text: String =
+		"""
     stressline — local HTTP/HTTPS stress tester
 
     Usage:
@@ -45,5 +45,5 @@ object Help {
       stressline https://example.com -c 20 -t 30s --json-out reports/run.json
       stressline https://api/users -X POST -H "Content-Type: application/json" -d @body.json -c 10 -t 30s
       stressline https://example.com -c 50 -t 30s --fail-if-p95 200ms --fail-if-error-rate 1
-    """.trimIndent()
+		""".trimIndent()
 }
