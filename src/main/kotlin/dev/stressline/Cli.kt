@@ -12,6 +12,7 @@ class CliValidationException(
 ) : Exception(message)
 
 fun parseArgs(args: Array<String>): RunConfig {
+  val (jsonOut, rest) = extractJsonOut(args)
   val parser = ArgParser("stressline")
   val urlOpt by parser.option(
     ArgType.String,
@@ -35,8 +36,11 @@ fun parseArgs(args: Array<String>): RunConfig {
   val timeout by parser.option(ArgType.String, fullName = "timeout", description = "Per-request timeout").default("5s")
   val insecure by parser.option(ArgType.Boolean, fullName = "insecure", description = "Skip TLS verification").default(false)
   val noProgress by parser.option(ArgType.Boolean, fullName = "no-progress", description = "Disable live progress").default(false)
+  val json by parser.option(ArgType.Boolean, fullName = "json", description = "Emit summary as JSON on stdout").default(false)
+  val failIfErrorRate by parser.option(ArgType.Double, fullName = "fail-if-error-rate", description = "Exit 1 if error rate % exceeds this")
+  val failIfP95 by parser.option(ArgType.String, fullName = "fail-if-p95", description = "Exit 1 if p95 latency exceeds this duration")
 
-  parser.parse(args)
+  parser.parse(rest)
 
   if (urlOpt != null && urlArg != null && urlOpt != urlArg) {
     throw CliValidationException("URL specified twice with different values; pass it once (as an argument or with --url)")
@@ -54,6 +58,17 @@ fun parseArgs(args: Array<String>): RunConfig {
   if (requests != null && requests!! <= 0) {
     throw CliValidationException("--requests must be a positive integer")
   }
+  if (failIfErrorRate != null && failIfErrorRate!! < 0) {
+    throw CliValidationException("--fail-if-error-rate must be >= 0")
+  }
+  val failP95 =
+    failIfP95?.let {
+      try {
+        DurationParser.parse(it)
+      } catch (e: IllegalArgumentException) {
+        throw CliValidationException("--fail-if-p95: ${e.message}")
+      }
+    }
 
   val mode =
     when {
@@ -95,5 +110,33 @@ fun parseArgs(args: Array<String>): RunConfig {
     timeout = DurationParser.parse(timeout),
     insecure = insecure,
     showProgress = !noProgress,
+    jsonToStdout = json,
+    jsonOut = jsonOut,
+    failIfErrorRate = failIfErrorRate,
+    failIfP95 = failP95,
   )
+}
+
+// kotlinx-cli cannot express an option with an optional value, so pull
+// --json-out out of the argument list before it parses the rest.
+private fun extractJsonOut(raw: Array<String>): Pair<JsonOutTarget?, Array<String>> {
+  val remaining = mutableListOf<String>()
+  var target: JsonOutTarget? = null
+  var i = 0
+  while (i < raw.size) {
+    if (raw[i] == "--json-out") {
+      val next = raw.getOrNull(i + 1)
+      if (next != null && !next.startsWith("-") && next.lowercase().endsWith(".json")) {
+        target = JsonOutTarget.File(next)
+        i += 2
+      } else {
+        target = JsonOutTarget.Auto
+        i += 1
+      }
+    } else {
+      remaining.add(raw[i])
+      i += 1
+    }
+  }
+  return target to remaining.toTypedArray()
 }

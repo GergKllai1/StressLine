@@ -3,6 +3,7 @@ package dev.stressline
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class CliTest :
@@ -102,6 +103,41 @@ class CliTest :
       should("reject --requests 0") {
         shouldThrow<CliValidationException> {
           parseArgs(arrayOf("--url", "http://x", "--concurrency", "1", "--requests", "0"))
+        }
+      }
+    }
+    context("JSON and threshold flags") {
+      should("set jsonToStdout from --json") {
+        parseArgs(arrayOf("http://x", "-c", "1", "--json")).jsonToStdout shouldBe true
+      }
+      should("treat bare --json-out as Auto") {
+        parseArgs(arrayOf("http://x", "-c", "1", "--json-out")).jsonOut shouldBe JsonOutTarget.Auto
+      }
+      should("treat --json-out before another flag as Auto") {
+        parseArgs(arrayOf("http://x", "--json-out", "-c", "1")).jsonOut shouldBe JsonOutTarget.Auto
+      }
+      should("take a .json path after --json-out") {
+        parseArgs(arrayOf("http://x", "-c", "1", "--json-out", "reports/run.json")).jsonOut shouldBe
+          JsonOutTarget.File("reports/run.json")
+      }
+      should("not treat a non-.json token (a URL) as the path") {
+        val c = parseArgs(arrayOf("--json-out", "https://example.com", "-c", "1"))
+        c.jsonOut shouldBe JsonOutTarget.Auto
+        c.url shouldBe "https://example.com"
+      }
+      should("parse --fail-if-error-rate and --fail-if-p95") {
+        val c = parseArgs(arrayOf("http://x", "-c", "1", "--fail-if-error-rate", "1.5", "--fail-if-p95", "200ms"))
+        c.failIfErrorRate shouldBe 1.5
+        c.failIfP95 shouldBe 200.milliseconds
+      }
+      should("reject a negative error-rate threshold") {
+        shouldThrow<CliValidationException> {
+          parseArgs(arrayOf("http://x", "-c", "1", "--fail-if-error-rate", "-1"))
+        }
+      }
+      should("reject a malformed p95 threshold") {
+        shouldThrow<CliValidationException> {
+          parseArgs(arrayOf("http://x", "-c", "1", "--fail-if-p95", "bogus"))
         }
       }
     }
