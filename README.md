@@ -4,7 +4,7 @@ A local HTTP/HTTPS stress-testing CLI built with Kotlin coroutines.
 
 ## Install (Linux/macOS)
 
-Installs a `stressline` command on your `PATH`. Requires a Java 21+ runtime.
+Installs a `stressline` command on your `PATH`. Requires a Java 17+ runtime.
 
 ### From a release (recommended)
 

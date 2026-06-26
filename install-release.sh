@@ -1,6 +1,6 @@
 #!/bin/sh
 # Download and install the latest released `stressline` binary (Linux/macOS).
-# Requires a Java 21+ runtime on PATH at run time.
+# Requires a Java 17+ runtime on PATH at run time.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/GergKllai1/StressLine/main/install-release.sh | sh
@@ -59,7 +59,7 @@ esac
 # Warn if no Java runtime is available.
 if ! command -v java >/dev/null 2>&1; then
     echo
-    echo "NOTE: 'java' was not found on PATH. stressline needs a Java 21+ runtime to run."
+    echo "NOTE: 'java' was not found on PATH. stressline needs a Java 17+ runtime to run."
 fi
 
 echo

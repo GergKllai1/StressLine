@@ -5,7 +5,7 @@
 #   ./install.sh                     # per-user install into ~/.local (no sudo)
 #   PREFIX=/usr/local ./install.sh   # system-wide (may require sudo)
 #
-# Requires a Java 21+ runtime on PATH at run time (the launcher invokes `java`).
+# Requires a Java 17+ runtime on PATH at run time (the launcher invokes `java`).
 set -eu
 
 # Resolve this script's directory so it works when invoked from anywhere.
@@ -47,7 +47,7 @@ esac
 # Warn if no Java runtime is available.
 if ! command -v java >/dev/null 2>&1; then
     echo
-    echo "NOTE: 'java' was not found on PATH. stressline needs a Java 21+ runtime to run."
+    echo "NOTE: 'java' was not found on PATH. stressline needs a Java 17+ runtime to run."
 fi
 
 echo
