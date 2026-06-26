@@ -1,6 +1,7 @@
 package dev.stressline
 
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -41,6 +42,26 @@ class ReportTest :
         text shouldContain "p95"
         text shouldContain "timeout"
         text shouldContain "500"
+      }
+    }
+    context("json output") {
+      should("serialize the snapshot and config fields") {
+        val config = RunConfig(url = "https://example.com", mode = LoadMode.FixedConcurrency(50))
+        val json = Report.json(sampleSnapshot(), 2.seconds, config)
+        json shouldContain "\"url\":\"https://example.com\""
+        json shouldContain "\"mode\":{\"type\":\"concurrency\",\"value\":50}"
+        json shouldContain "\"total\":100"
+        json shouldContain "\"failed\":10"
+        json shouldContain "\"errorRatePct\":10.00"
+        json shouldContain "\"p95\":50"
+        json shouldContain "\"errors\":{\"http\":6,\"timeout\":4}"
+        json shouldContain "\"statusCodes\":{\"200\":90,\"500\":6}"
+      }
+      should("produce balanced braces") {
+        val config = RunConfig(url = "http://x", mode = LoadMode.TargetRate(10))
+        val json = Report.json(sampleSnapshot(), 1.seconds, config)
+        json.count { it == '{' } shouldBe json.count { it == '}' }
+        json shouldContain "\"type\":\"rate\""
       }
     }
   })
