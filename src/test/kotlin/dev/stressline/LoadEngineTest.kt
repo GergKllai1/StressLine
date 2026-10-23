@@ -5,6 +5,7 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.toList
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
@@ -51,15 +52,49 @@ class LoadEngineTest :
 				}
 			}
 		}
-		context("target rate with a request count") {
+		context("target rate") {
+			suspend fun TestScope.launchTimes(
+				rps: Int,
+				stop: StopCondition,
+				responseTime: Duration = Duration.ZERO,
+			): List<Long> {
+				val starts = mutableListOf<Long>()
+				val runner =
+					object : HttpRunner {
+						override suspend fun execute(): RequestResult {
+							starts += testScheduler.currentTime
+							kotlinx.coroutines.delay(responseTime)
+							return RequestResult(responseTime, RequestError.None(200))
+						}
+					}
+				val channel = Channel<RequestResult>(Channel.UNLIMITED)
+				LoadEngine(runner, channel, timeout = 5.seconds, timeSource = testScheduler.timeSource).run(LoadMode.TargetRate(rps), stop)
+				channel.close()
+				channel.toList().size shouldBe starts.size
+				return starts
+			}
+
 			should("execute exactly N requests") {
 				runTest {
-					val runner = CountingRunner()
-					val channel = Channel<RequestResult>(Channel.UNLIMITED)
-					LoadEngine(runner, channel).run(LoadMode.TargetRate(100), StopCondition.Requests(50))
-					channel.close()
-					runner.count.get() shouldBe 50
-					channel.toList().size shouldBe 50
+					launchTimes(rps = 100, stop = StopCondition.Requests(50)).size shouldBe 50
+				}
+			}
+			should("hold a rate whose interval is not a whole millisecond") {
+				runTest {
+					// 800/s is a 1.25 ms interval; sleeping it per launch rounds up to 2 ms and paces at 500/s.
+					launchTimes(rps = 800, stop = StopCondition.Requests(2400)).last() shouldBe 2_999L
+				}
+			}
+			should("keep launching on schedule while responses take longer than two seconds") {
+				runTest {
+					val starts = launchTimes(rps = 10, stop = StopCondition.Requests(50), responseTime = 3.seconds)
+					starts.size shouldBe 50
+					starts.last() shouldBe 4_900L
+				}
+			}
+			should("launch rate x duration requests when stopping on a duration") {
+				runTest {
+					launchTimes(rps = 50, stop = StopCondition.ForDuration(2.seconds)).size shouldBe 100
 				}
 			}
 		}

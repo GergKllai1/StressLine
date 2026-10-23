@@ -18,6 +18,7 @@ data class Snapshot(
 	val latencyP95: Duration,
 	val latencyP99: Duration,
 	val latencyMax: Duration,
+	val topOtherErrors: List<Pair<String, Long>> = emptyList(),
 )
 
 interface MetricsCollector {
@@ -34,6 +35,7 @@ class ChannelMetricsCollector : MetricsCollector {
 	private var failed = 0L
 	private val errorCounts = HashMap<String, Long>()
 	private val statusCounts = HashMap<Int, Long>()
+	private val otherMessages = HashMap<String, Long>()
 	private val lock = Any()
 
 	override suspend fun consume(channel: Channel<RequestResult>) {
@@ -69,12 +71,19 @@ class ChannelMetricsCollector : MetricsCollector {
 			is RequestError.Other -> {
 				failed++
 				bump("other")
+				countOtherMessage(e.message)
 			}
 		}
 	}
 
 	private fun bump(label: String) {
 		errorCounts.merge(label, 1L, Long::plus)
+	}
+
+	private fun countOtherMessage(message: String) {
+		val key = message.take(MAX_MESSAGE_LENGTH)
+		val tracked = if (key in otherMessages || otherMessages.size < MAX_DISTINCT_MESSAGES) key else UNTRACKED_MESSAGES
+		otherMessages.merge(tracked, 1L, Long::plus)
 	}
 
 	override fun snapshot(): Snapshot = synchronized(lock) {
@@ -92,6 +101,14 @@ class ChannelMetricsCollector : MetricsCollector {
 			latencyP95 = pct(95.0),
 			latencyP99 = pct(99.0),
 			latencyMax = (if (total == 0L) 0L else histogram.maxValue).nanoseconds,
+			topOtherErrors = otherMessages.entries.sortedByDescending { it.value }.take(TOP_OTHER_ERRORS).map { it.key to it.value },
 		)
+	}
+
+	private companion object {
+		const val TOP_OTHER_ERRORS = 5
+		const val MAX_DISTINCT_MESSAGES = 50
+		const val MAX_MESSAGE_LENGTH = 200
+		const val UNTRACKED_MESSAGES = "(further distinct messages)"
 	}
 }

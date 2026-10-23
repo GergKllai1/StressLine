@@ -66,4 +66,35 @@ class MetricsCollectorTest :
 				}
 			}
 		}
+		context("other errors") {
+			suspend fun snapshotOfOthers(messages: List<String>): Snapshot {
+				val collector = ChannelMetricsCollector()
+				val channel = Channel<RequestResult>(Channel.UNLIMITED)
+				messages.forEach { channel.send(RequestResult(10.milliseconds, RequestError.Other(it))) }
+				channel.close()
+				collector.consume(channel)
+				return collector.snapshot()
+			}
+
+			should("list the five most common messages, most frequent first") {
+				runTest {
+					val messages = (1..6).flatMap { n -> List(n) { "error $n" } }
+					snapshotOfOthers(messages).topOtherErrors shouldBe
+						listOf("error 6" to 6L, "error 5" to 5L, "error 4" to 4L, "error 3" to 3L, "error 2" to 2L)
+				}
+			}
+			should("cut long messages to 200 characters") {
+				runTest {
+					val top = snapshotOfOthers(listOf("x".repeat(500))).topOtherErrors.single()
+					top.first.length shouldBe 200
+				}
+			}
+			should("fold messages beyond fifty distinct ones into one bucket") {
+				runTest {
+					val messages = (1..50).flatMap { n -> listOf("known $n", "known $n") } + (1..30).map { "late $it" } + (1..30).map { "late $it" }
+					val top = snapshotOfOthers(messages).topOtherErrors
+					top.first() shouldBe ("(further distinct messages)" to 60L)
+				}
+			}
+		}
 	})

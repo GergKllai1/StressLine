@@ -34,6 +34,7 @@ object Help {
 
     Tuning:
       --timeout <DUR>              Per-request timeout (default 5s)
+      --connections <N>            Max open connections (default: -c workers, or rate x timeout)
       --insecure                   Skip TLS certificate verification
 
       -h, --help                   Show this help

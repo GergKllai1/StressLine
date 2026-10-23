@@ -48,6 +48,10 @@ object Report {
 		if (s.errorCounts.isNotEmpty()) {
 			sb.appendLine("Errors:")
 			s.errorCounts.toSortedMap().forEach { (k, v) -> sb.appendLine("  $k: $v") }
+			if (s.topOtherErrors.isNotEmpty()) {
+				sb.appendLine("Most common other errors:")
+				s.topOtherErrors.forEach { (message, count) -> sb.appendLine("  $count× $message") }
+			}
 		}
 		if (s.statusCounts.isNotEmpty()) {
 			sb.appendLine("Status codes:")
@@ -77,6 +81,10 @@ object Report {
 			s.statusCounts.toSortedMap().entries.joinToString(separator = ",", prefix = "{", postfix = "}") {
 				"\"${it.key}\":${it.value}"
 			}
+		val otherErrors =
+			s.topOtherErrors.joinToString(separator = ",", prefix = "[", postfix = "]") { (message, count) ->
+				"{\"message\":\"${escapeJson(message)}\",\"count\":$count}"
+			}
 		return buildString {
 			append("{")
 			append("\"url\":\"").append(escapeJson(config.url)).append("\",")
@@ -101,6 +109,7 @@ object Report {
 			append("\"max\":").append(s.latencyMax.inWholeMilliseconds)
 			append("},")
 			append("\"errors\":").append(errors).append(",")
+			append("\"otherErrors\":").append(otherErrors).append(",")
 			append("\"statusCodes\":").append(statusCodes)
 			append("}")
 		}

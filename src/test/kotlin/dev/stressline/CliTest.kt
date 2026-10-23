@@ -105,6 +105,19 @@ class CliTest :
 					parseArgs(arrayOf("--url", "http://x", "--concurrency", "1", "--requests", "0"))
 				}
 			}
+			should("reject --connections 0") {
+				shouldThrow<CliValidationException> {
+					parseArgs(arrayOf("--url", "http://x", "--rate", "10", "--connections", "0"))
+				}
+			}
+		}
+		context("connections") {
+			should("default to none, leaving the limit to the load mode") {
+				parseArgs(arrayOf("http://x", "-r", "10")).connections shouldBe null
+			}
+			should("parse --connections") {
+				parseArgs(arrayOf("http://x", "-r", "800", "--connections", "3000")).connections shouldBe 3000
+			}
 		}
 		context("JSON and threshold flags") {
 			should("set jsonToStdout from --json") {

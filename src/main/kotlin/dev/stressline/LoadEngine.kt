@@ -9,11 +9,15 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 class LoadEngine(
 	private val runner: HttpRunner,
 	private val results: Channel<RequestResult>,
+	private val timeout: Duration = 5.seconds,
+	private val timeSource: TimeSource = TimeSource.Monotonic,
 ) {
 	suspend fun run(
 		mode: LoadMode,
@@ -59,7 +63,9 @@ class LoadEngine(
 		stop: StopCondition,
 	) = coroutineScope {
 		val interval = (1.seconds) / rps
-		val semaphore = Semaphore(maxOf(1, rps * 2))
+		val semaphore = Semaphore(maxInFlight(rps, timeout))
+		val start = timeSource.markNow()
+		var launched = 0L
 
 		suspend fun launchOne() {
 			semaphore.acquire()
@@ -72,19 +78,23 @@ class LoadEngine(
 			}
 		}
 
+		// delay() rounds up to whole milliseconds, so pace against the clock: launch every request due by now, then sleep until the next.
+		suspend fun launchDue(limit: Long) {
+			val due = minOf(limit, (start.elapsedNow() / interval).toLong() + 1)
+			while (launched < due) {
+				launchOne()
+				launched++
+			}
+			if (launched < limit) delay(interval * launched.toDouble() - start.elapsedNow())
+		}
+
 		when (stop) {
 			is StopCondition.Requests -> {
-				repeat(stop.count) {
-					launchOne()
-					delay(interval)
-				}
+				while (launched < stop.count) launchDue(stop.count.toLong())
 			}
 			is StopCondition.ForDuration -> {
 				withTimeoutOrNull(stop.duration) {
-					while (coroutineContext.isActive) {
-						launchOne()
-						delay(interval)
-					}
+					while (coroutineContext.isActive) launchDue(Long.MAX_VALUE)
 				}
 			}
 		}

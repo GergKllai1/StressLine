@@ -3,7 +3,10 @@ package dev.stressline
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import java.net.ConnectException
+import java.net.SocketTimeoutException
 
 class RequestResultTest :
 	ShouldSpec({
@@ -27,6 +30,11 @@ class RequestResultTest :
 			}
 			should("map 'Too many open files' to TooManyFiles") {
 				RequestError.fromException(RuntimeException("socket: Too many open files")) shouldBe RequestError.TooManyFiles
+			}
+			should("map the HTTP client's request, connect and socket timeouts to Timeout") {
+				RequestError.fromException(HttpRequestTimeoutException("http://x", 60_000L)) shouldBe RequestError.Timeout
+				RequestError.fromException(ConnectTimeoutException("Connect timeout has expired")) shouldBe RequestError.Timeout
+				RequestError.fromException(SocketTimeoutException("Read timed out")) shouldBe RequestError.Timeout
 			}
 			should("map anything else to Other with the message") {
 				RequestError.fromException(RuntimeException("boom")).shouldBeInstanceOf<RequestError.Other>()

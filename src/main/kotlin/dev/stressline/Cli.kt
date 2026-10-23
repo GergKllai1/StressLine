@@ -50,6 +50,11 @@ fun parseArgs(args: Array<String>): RunConfig {
 		description = "Stop after duration e.g. 30s",
 	)
 	val timeout by parser.option(ArgType.String, fullName = "timeout", description = "Per-request timeout").default("5s")
+	val connections by parser.option(
+		ArgType.Int,
+		fullName = "connections",
+		description = "Max open connections (default: follows the load mode)",
+	)
 	val insecure by parser.option(ArgType.Boolean, fullName = "insecure", description = "Skip TLS verification")
 		.default(false)
 	val noProgress by parser.option(ArgType.Boolean, fullName = "no-progress", description = "Disable live progress")
@@ -84,6 +89,9 @@ fun parseArgs(args: Array<String>): RunConfig {
 	}
 	if (requests != null && requests!! <= 0) {
 		throw CliValidationException("--requests must be a positive integer")
+	}
+	if (connections != null && connections!! <= 0) {
+		throw CliValidationException("--connections must be a positive integer")
 	}
 	if (failIfErrorRate != null && failIfErrorRate!! < 0) {
 		throw CliValidationException("--fail-if-error-rate must be >= 0")
@@ -143,6 +151,7 @@ fun parseArgs(args: Array<String>): RunConfig {
 		jsonOut = jsonOut,
 		failIfErrorRate = failIfErrorRate,
 		failIfP95 = failP95,
+		connections = connections,
 	)
 }
 

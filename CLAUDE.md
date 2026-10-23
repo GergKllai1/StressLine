@@ -42,8 +42,9 @@ LoadEngine ──(RequestResult)──> Channel ──> ChannelMetricsCollector 
   (hand-curated, not the kotlinx-cli auto-help).
 - **`LoadEngine.kt`** — two load modes × two stop conditions:
   - `FixedConcurrency` (closed model): N coroutines each loop `execute()` as fast as possible.
-  - `TargetRate` (open model): launch on a fixed interval, bounded by a semaphore. Capped ~few-thousand RPS by the ~1ms JVM timer.
+  - `TargetRate` (open model): launch on a fixed interval, paced against `timeSource` (launches every request due by now, then sleeps until the next, because `delay` rounds up to whole ms), bounded by a semaphore of `maxInFlight(rps, timeout)` so the rate holds while responses slow down.
   - Stop is either `Requests(N)` or `ForDuration` (via `withTimeoutOrNull`).
+- **`HttpClientFactory.kt`** — `buildHttpClient` sizes the CIO pool to `RunConfig.connectionLimit()` and sets CIO's request/connect timeout to `--timeout` (CIO's own defaults would cap a run at 100 connections per host and 15 s).
 - **`HttpRunner.kt`** — `KtorHttpRunner` does one request via Ktor CIO, drains the
   body (releases the keep-alive connection), and maps the outcome to a
   `RequestResult(latency, RequestError)`. It never throws on failure except for

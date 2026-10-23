@@ -1,31 +1,12 @@
 package dev.stressline
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.security.cert.X509Certificate
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.net.ssl.X509TrustManager
 import kotlin.system.exitProcess
 import kotlin.time.TimeSource
-
-private val trustAll =
-	object : X509TrustManager {
-		override fun checkClientTrusted(
-			chain: Array<out X509Certificate>?,
-			authType: String?,
-		) {}
-
-		override fun checkServerTrusted(
-			chain: Array<out X509Certificate>?,
-			authType: String?,
-		) {}
-
-		override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-	}
 
 private fun writeJsonFile(
 	target: JsonOutTarget,
@@ -71,20 +52,9 @@ fun main(args: Array<String>) {
 		}
 
 	val fdLog: (String) -> Unit = { if (config.jsonToStdout) System.err.println(it) else println(it) }
-	when (val m = config.mode) {
-		is LoadMode.FixedConcurrency -> ensureFdLimit(m.workers, JnaFdLimit(), fdLog)
-		is LoadMode.TargetRate -> ensureFdLimit(m.rps * 2, JnaFdLimit(), fdLog)
-	}
+	ensureFdLimit(config.connectionLimit(), JnaFdLimit(), fdLog)
 
-	val client =
-		HttpClient(CIO) {
-			expectSuccess = false
-			engine {
-				if (config.insecure) {
-					https { trustManager = trustAll }
-				}
-			}
-		}
+	val client = buildHttpClient(config)
 
 	val collector = ChannelMetricsCollector()
 	val start = TimeSource.Monotonic.markNow()
@@ -105,7 +75,7 @@ fun main(args: Array<String>) {
 
 	val results = Channel<RequestResult>(capacity = 1024)
 	val runner = KtorHttpRunner(client, config)
-	val engine = LoadEngine(runner, results)
+	val engine = LoadEngine(runner, results, config.timeout)
 	val progressOut: Appendable = if (config.jsonToStdout) System.err else System.out
 	val reporter = ProgressReporter(collector, enabled = config.showProgress, out = progressOut)
 

@@ -107,6 +107,7 @@ CI gate (exit 1 if breached):
 
 Tuning:
   --timeout <DUR>         Per-request timeout (default 5s)
+  --connections <N>       Max open connections (default: -c workers, or rate × timeout)
   --insecure              Skip TLS certificate verification
   --no-progress           Disable the live progress line
 
@@ -149,7 +150,8 @@ If your *achieved* throughput comes in well below a `--rate` target, the server
   - `timeout` — no response within `--timeout`
   - `connection-refused` — nothing accepting connections at the target
   - `too-many-files` — you hit the file-descriptor limit (see Tips)
-  - `other` — anything else (DNS, TLS, resets); the run never crashes on these
+  - `other` — anything else (DNS, TLS, resets); the run never crashes on these.
+    The summary lists the most common `other` messages (JSON: `otherErrors`).
 
 ## Tips & limits
 
@@ -163,9 +165,13 @@ If your *achieved* throughput comes in well below a `--rate` target, the server
   Linux/macOS StressLine raises its own soft limit automatically, but if it warns
   it couldn't go high enough, raise it yourself before the run:
   `ulimit -n 65535`.
-- **`--rate` has a pacing ceiling of roughly a few thousand RPS** (it's limited by
-  the ~1 ms JVM timer). To push higher, use `--concurrency`, which has no such
-  ceiling.
+- **Connection pool size follows the load mode.** `--concurrency N` allows N
+  open connections; `--rate R` allows R × `--timeout`, so the rate holds even
+  when responses slow down. Override with `--connections`.
+- **`--rate` is paced against the clock**, launching every request that is due
+  on each wake-up, so sub-millisecond intervals (e.g. 1,500 req/s) still average
+  out to the target. The ceiling is what your machine and network can send; check
+  the achieved *Throughput* against the target.
 - **Connections are reused (keep-alive)** automatically — essential for accurate,
   high-throughput numbers.
 - **`--insecure`** disables TLS verification — handy for self-signed or local

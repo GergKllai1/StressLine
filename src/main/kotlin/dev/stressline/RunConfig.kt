@@ -1,7 +1,9 @@
 package dev.stressline
 
+import kotlin.math.ceil
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 sealed interface LoadMode {
 	data class FixedConcurrency(
@@ -45,7 +47,20 @@ data class RunConfig(
 	val jsonOut: JsonOutTarget? = null,
 	val failIfErrorRate: Double? = null,
 	val failIfP95: Duration? = null,
+	val connections: Int? = null,
 )
+
+/** Connections the HTTP client may hold open at once: `--connections`, else what the load mode can have in flight. */
+fun RunConfig.connectionLimit(): Int = connections ?: when (val m = mode) {
+	is LoadMode.FixedConcurrency -> m.workers
+	is LoadMode.TargetRate -> maxInFlight(m.rps, timeout)
+}
+
+/** Requests a target rate can have in flight when each may take up to [timeout]. */
+fun maxInFlight(
+	rps: Int,
+	timeout: Duration,
+): Int = ceil(rps * timeout.toDouble(DurationUnit.SECONDS)).toInt().coerceAtLeast(1)
 
 fun parseHeader(raw: String): Pair<String, String> {
 	val idx = raw.indexOf(':')

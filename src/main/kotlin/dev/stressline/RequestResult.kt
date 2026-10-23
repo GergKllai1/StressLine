@@ -1,5 +1,8 @@
 package dev.stressline
 
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import java.net.SocketTimeoutException
 import kotlin.time.Duration
 
 data class RequestResult(
@@ -34,6 +37,7 @@ sealed interface RequestError {
 		fun fromException(e: Throwable): RequestError {
 			val msg = e.message ?: e::class.simpleName ?: "unknown"
 			return when {
+				e is HttpRequestTimeoutException || e is ConnectTimeoutException || e is SocketTimeoutException -> Timeout
 				msg.contains("Too many open files", ignoreCase = true) -> TooManyFiles
 				msg.contains("Connection refused", ignoreCase = true) -> ConnectionRefused
 				else -> Other(msg)

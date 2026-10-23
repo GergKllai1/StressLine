@@ -9,8 +9,7 @@ import io.ktor.http.HttpMethod
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
-import kotlin.time.Duration
-import kotlin.time.measureTimedValue
+import kotlin.time.TimeSource
 
 interface HttpRunner {
 	suspend fun execute(): RequestResult
@@ -20,9 +19,10 @@ class KtorHttpRunner(
 	private val client: HttpClient,
 	private val config: RunConfig,
 ) : HttpRunner {
-	override suspend fun execute(): RequestResult = try {
-		val timed =
-			measureTimedValue {
+	override suspend fun execute(): RequestResult {
+		val start = TimeSource.Monotonic.markNow()
+		return try {
+			val status =
 				withTimeout(config.timeout) {
 					val response =
 						client.request(config.url) {
@@ -33,13 +33,13 @@ class KtorHttpRunner(
 					response.bodyAsText() // drain so the connection is released
 					response.status.value
 				}
-			}
-		RequestResult(timed.duration, RequestError.fromStatus(timed.value))
-	} catch (_: TimeoutCancellationException) {
-		RequestResult(config.timeout, RequestError.Timeout)
-	} catch (e: CancellationException) {
-		throw e
-	} catch (e: Throwable) {
-		RequestResult(Duration.ZERO, RequestError.fromException(e))
+			RequestResult(start.elapsedNow(), RequestError.fromStatus(status))
+		} catch (_: TimeoutCancellationException) {
+			RequestResult(config.timeout, RequestError.Timeout)
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Throwable) {
+			RequestResult(start.elapsedNow(), RequestError.fromException(e))
+		}
 	}
 }
